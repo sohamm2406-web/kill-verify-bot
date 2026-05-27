@@ -1,4 +1,4 @@
-import sqlite3, logging
+import sqlite3, logging, os
 from datetime import datetime, timedelta
 from config import Config
 
@@ -7,6 +7,9 @@ DB_PATH = "data/verifications.db"
 
 
 def _get_connection():
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
