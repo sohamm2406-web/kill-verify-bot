@@ -5,9 +5,23 @@ from config import Config
 log = logging.getLogger(__name__)
 DB_PATH = "data/verifications.db"
 
+# Ensure database directory exists and is writable
+db_dir = os.path.dirname(DB_PATH)
+if db_dir:
+    os.makedirs(db_dir, exist_ok=True)
+    try:
+        os.chmod(db_dir, 0o755)
+    except Exception as e:
+        log.warning(f"Could not chmod directory {db_dir}: {e}")
+
+if os.path.exists(DB_PATH):
+    try:
+        os.chmod(DB_PATH, 0o644)
+    except Exception as e:
+        log.warning(f"Could not chmod database file {DB_PATH}: {e}")
+
 
 def _get_connection():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
