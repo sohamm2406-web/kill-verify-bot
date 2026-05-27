@@ -91,8 +91,8 @@ def is_on_cooldown(user_id: str) -> tuple[bool, int]:
     wait_duration = timedelta(hours=Config.COOLDOWN_HOURS)
     elapsed = datetime.utcnow() - last_attempt
     if elapsed < wait_duration:
-        remaining_seconds = (wait_duration - elapsed).seconds
-        return True, int(remaining_seconds / 3600) + 1
+        remaining_seconds = int((wait_duration - elapsed).total_seconds())
+        return True, remaining_seconds
     return False, 0
 
 def get_attempt_count(user_id: str) -> int:

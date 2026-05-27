@@ -97,12 +97,23 @@ class VerifyCog(commands.Cog):
             )
             return
 
-        is_on_cooldown, hours_remaining = db.is_on_cooldown(user_id)
+        is_on_cooldown, remaining_seconds = db.is_on_cooldown(user_id)
         if is_on_cooldown:
             await message.delete(delay=3)
+            if remaining_seconds < 60:
+                time_str = f"{remaining_seconds}s"
+            elif remaining_seconds < 3600:
+                mins = remaining_seconds // 60
+                secs = remaining_seconds % 60
+                time_str = f"{mins}m {secs}s" if secs else f"{mins}m"
+            else:
+                hours = remaining_seconds // 3600
+                mins = (remaining_seconds % 3600) // 60
+                time_str = f"{hours}h {mins}m" if mins else f"{hours}h"
+
             await self._send_temp_message(
                 message,
-                f"{user.mention} You're on cooldown — please wait **{hours_remaining}h** before resubmitting."
+                f"{user.mention} You're on cooldown — please wait **{time_str}** before resubmitting."
             )
             return
 
