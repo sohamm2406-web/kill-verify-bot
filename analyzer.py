@@ -48,9 +48,16 @@ _PROMPT = f"""You are a game stats screenshot verifier for clan {Config.REQUIRED
 
 EXTRACT:
 1. K/D ratio (exact number shown)
-2. Account name — look for one containing "{Config.REQUIRED_TAG}" (corner/sidebar/profile)
+2. Account name — This is the player name whose stats are being shown in the game UI. It is usually next to 'Stats for...' or in the top-right profile corner.
 3. Games played count
 4. Visible kills and deaths
+
+CRITICAL RULES FOR ACCOUNT NAME & CLAN TAG:
+- The account name MUST be extracted from the actual game UI (e.g., the title "Stats for <Name>", or the profile box in the top-right).
+- DO NOT look at browser tab titles, Windows taskbar/title bars, Discord window titles, or any other elements outside the game interface.
+- The clan tag "{Config.REQUIRED_TAG}" MUST be part of the account name inside the game UI (e.g. "[KILL] PlayerName"). 
+- If the account name in the game UI does not contain "{Config.REQUIRED_TAG}", set "tag_found" to false, even if you see "{Config.REQUIRED_TAG}" in a browser tab or elsewhere in the image.
+- Set "tag_found" to true ONLY if "{Config.REQUIRED_TAG}" is physically present in the game account name.
 
 ANTI-TAMPER — check all:
 - Font/pixel consistency vs surrounding text (halos, smearing, bleed = flag)
