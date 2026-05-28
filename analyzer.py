@@ -53,10 +53,10 @@ EXTRACT:
 4. Visible kills and deaths
 
 CRITICAL RULES FOR ACCOUNT NAME & CLAN TAG:
-- Look ONLY at the top-right profile box (which displays the username next to level number, diamonds, and the "Account" and "Sign Out" buttons) or the main stats header ("Stats for <username>") to find the player's account name.
-- The clan tag "{Config.REQUIRED_TAG}" MUST be part of the account name inside this game UI (e.g., "[KILL] PlayerName").
+- Look ONLY at the top-right profile box (which displays the username next to level number, diamonds, and above the "Account" and "Sign Out" buttons) to verify if the clan tag "{Config.REQUIRED_TAG}" is present in the account name.
+- Note: The main stats header "Stats for <username>" in the center of the page does NOT display the clan tag; the tag ONLY appears in that top-right profile box.
+- Set "tag_found" to true ONLY if "{Config.REQUIRED_TAG}" is physically present in the username inside that top-right profile box. If the username there does not contain "{Config.REQUIRED_TAG}", you MUST set "tag_found" to false.
 - DO NOT use text from browser tab titles, Windows taskbar/title bars, Discord window titles, or other open applications for name or tag verification.
-- If the name in that top-right profile box or the "Stats for..." header does not contain "{Config.REQUIRED_TAG}", you MUST set "tag_found" to false, even if you see "[KILL]" in a browser tab.
 - HOWEVER, you MUST still look at the entire image (including browser tabs, taskbars, and other open windows) for ANTI-TAMPER and cheat detection. For example, check for cheat programs, cheat sites, script executors, or mod search tabs.
 
 ANTI-TAMPER — check all:
