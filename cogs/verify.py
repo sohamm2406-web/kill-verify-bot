@@ -182,6 +182,7 @@ class VerifyCog(commands.Cog):
             approval_embed.set_author(name=str(user), icon_url=user.display_avatar.url)
             approval_embed.set_footer(text="Verified by KILL Ascension Bot")
             await message.reply(embed=approval_embed)
+            await self._dm_user(user, "approved", result)
 
         elif verdict in ("tampered", "flagged"):
             staff_label = "🚨 TAMPERED FLAG" if verdict == "tampered" else "🔍 Flagged"
@@ -207,6 +208,7 @@ class VerifyCog(commands.Cog):
                 view=ReviewView(user, message.guild, image_url, result),
                 allowed_mentions=discord.AllowedMentions(roles=True, users=True)
             )
+            await self._dm_user(user, "flagged", result)
 
         else:  # rejected
             rejection_embed = discord.Embed(
@@ -230,6 +232,7 @@ class VerifyCog(commands.Cog):
             )
             rejection_embed.set_footer(text=f"You can resubmit in {Config.COOLDOWN_HOURS}h.")
             await message.reply(embed=rejection_embed)
+            await self._dm_user(user, "rejected", result, reasons)
 
         db.log_verification(
             user_id, str(user), verdict,
@@ -277,6 +280,56 @@ class VerifyCog(commands.Cog):
     async def _send_temp_message(self, message: discord.Message, content: str, delay: int = 8):
         temp_message = await message.reply(content)
         await temp_message.delete(delay=delay)
+
+    async def _dm_user(self, user: discord.Member, verdict: str, result, reasons: list[str] | None = None):
+        """Send a DM to the user with their verification result. Silently fails if DMs are disabled."""
+        try:
+            if verdict == "approved":
+                dm_embed = discord.Embed(
+                    title="✅ Verification Approved!",
+                    description=(
+                        f"Welcome to **{Config.KILLERS_ROLE_NAME}**, {user.display_name}!\n\n"
+                        f"**K/D:** {result.kd:.2f}\n"
+                        f"**Games Played:** {result.games_played or 'N/A'}\n"
+                        f"**Account:** {result.tag_account_name or 'N/A'}"
+                    ),
+                    color=discord.Color.green()
+                )
+                dm_embed.set_footer(text="You now have access to all verified member channels.")
+
+            elif verdict == "flagged":
+                dm_embed = discord.Embed(
+                    title="⏳ Submission Under Review",
+                    description=(
+                        f"Your screenshot has been flagged for manual review, {user.display_name}.\n\n"
+                        "A staff member will review it shortly. You'll receive the "
+                        f"**{Config.KILLERS_ROLE_NAME}** role if approved."
+                    ),
+                    color=discord.Color.orange()
+                )
+                dm_embed.set_footer(text="No action needed — just wait for staff to review.")
+
+            else:  # rejected
+                reason_text = "\n".join(f"• {r}" for r in (reasons or []))
+                dm_embed = discord.Embed(
+                    title="❌ Verification Not Approved",
+                    description=(
+                        f"Your submission did not meet the requirements, {user.display_name}.\n\n"
+                        f"**Issues:**\n{reason_text}\n\n"
+                        f"**Requirements:**\n"
+                        f"• K/D must be **{Config.MIN_KD}+**\n"
+                        f"• Account must show **{Config.REQUIRED_TAG}**\n"
+                        f"• Minimum **{Config.MIN_GAMES_PLAYED}** games played"
+                    ),
+                    color=discord.Color.red()
+                )
+                dm_embed.set_footer(text="You can resubmit a new screenshot in the verification channel.")
+
+            await user.send(embed=dm_embed)
+        except discord.Forbidden:
+            log.info(f"Could not DM {user} — DMs are disabled.")
+        except Exception as e:
+            log.warning(f"Failed to DM {user}: {e}")
 
 
 class ReviewView(discord.ui.View):

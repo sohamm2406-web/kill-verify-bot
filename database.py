@@ -205,3 +205,40 @@ def delete_member_records(user_id: str, include_history=False) -> dict[str, int]
         "cooldowns":      cooldown_count,
         "verifications":  verifications_count,
     }
+
+
+# ── Leaderboard & Stats ──────────────────────────────────────────────────────
+
+def get_leaderboard(limit: int = 10) -> list[dict]:
+    return [dict(row) for row in _query(
+        "SELECT * FROM verified_users WHERE kd IS NOT NULL ORDER BY kd DESC LIMIT ?", (limit,))]
+
+
+def get_verification_stats() -> dict:
+    with _get_connection() as connection:
+        total_verified = connection.execute("SELECT COUNT(*) FROM verified_users").fetchone()[0]
+        avg_kd_row = connection.execute("SELECT AVG(kd) FROM verified_users WHERE kd IS NOT NULL").fetchone()
+        avg_kd = round(avg_kd_row[0], 2) if avg_kd_row[0] is not None else 0
+
+        total_submissions = connection.execute("SELECT COUNT(*) FROM verifications").fetchone()[0]
+
+        status_counts = {}
+        for row in connection.execute("SELECT status, COUNT(*) as cnt FROM verifications GROUP BY status").fetchall():
+            status_counts[row[0]] = row[1]
+
+        today_count = connection.execute(
+            "SELECT COUNT(*) FROM verifications WHERE submitted_at >= datetime('now', '-1 day')"
+        ).fetchone()[0]
+
+        week_count = connection.execute(
+            "SELECT COUNT(*) FROM verifications WHERE submitted_at >= datetime('now', '-7 days')"
+        ).fetchone()[0]
+
+    return {
+        "total_verified":    total_verified,
+        "avg_kd":            avg_kd,
+        "total_submissions": total_submissions,
+        "status_counts":     status_counts,
+        "today":             today_count,
+        "this_week":         week_count,
+    }

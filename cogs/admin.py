@@ -269,6 +269,96 @@ class AdminCog(commands.Cog):
             deletion_embed.set_footer(text="History kept. Use include_history=True to delete it.")
         await interaction.response.send_message(embed=deletion_embed)
 
+    # ── Leaderboard ───────────────────────────────────────────────────────────
+
+    @app_commands.command(name="leaderboard", description="Show top verified members ranked by K/D.")
+    async def leaderboard(self, interaction: discord.Interaction,
+                          limit: app_commands.Range[int, 1, 25] = 10):
+        rows = db.get_leaderboard(limit)
+        if not rows:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    title="🏆 Leaderboard",
+                    description="No verified members yet.",
+                    color=discord.Color.gold()
+                )
+            )
+            return
+
+        medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+        lines = []
+        for rank, row in enumerate(rows, 1):
+            medal = medals.get(rank, f"`#{rank}`")
+            kd_str = f"{row['kd']:.2f}" if row['kd'] is not None else "N/A"
+            lines.append(f"{medal} **{row['username']}** — K/D `{kd_str}`")
+
+        leaderboard_embed = discord.Embed(
+            title="🏆 KILL Clan Leaderboard",
+            description="\n".join(lines),
+            color=discord.Color.gold()
+        )
+        leaderboard_embed.set_footer(text=f"Top {len(rows)} verified member(s)")
+        await interaction.response.send_message(embed=leaderboard_embed)
+
+    # ── Stats Dashboard ───────────────────────────────────────────────────────
+
+    @app_commands.command(name="stats", description="Show verification stats dashboard.")
+    @app_commands.checks.has_permissions(manage_roles=True)
+    async def stats_dashboard(self, interaction: discord.Interaction):
+        if not await self._check_channel(interaction):
+            return
+
+        stats = db.get_verification_stats()
+        status_counts = stats["status_counts"]
+        total = stats["total_submissions"] or 1  # avoid division by zero
+
+        approved_count = status_counts.get("approved", 0)
+        rejected_count = status_counts.get("rejected", 0)
+        flagged_count  = status_counts.get("flagged", 0)
+
+        stats_embed = discord.Embed(
+            title="📊 Verification Stats Dashboard",
+            color=discord.Color.blue()
+        )
+        stats_embed.add_field(
+            name="👥 Verified Members",
+            value=f"**{stats['total_verified']}**",
+            inline=True
+        )
+        stats_embed.add_field(
+            name="📈 Average K/D",
+            value=f"**{stats['avg_kd']:.2f}**",
+            inline=True
+        )
+        stats_embed.add_field(
+            name="📋 Total Submissions",
+            value=f"**{stats['total_submissions']}**",
+            inline=True
+        )
+        stats_embed.add_field(
+            name="📅 Activity",
+            value=f"Today: **{stats['today']}**\nThis week: **{stats['this_week']}**",
+            inline=True
+        )
+        stats_embed.add_field(
+            name="✅ Approved",
+            value=f"**{approved_count}** ({approved_count * 100 // total}%)",
+            inline=True
+        )
+        stats_embed.add_field(
+            name="❌ Rejected",
+            value=f"**{rejected_count}** ({rejected_count * 100 // total}%)",
+            inline=True
+        )
+        if flagged_count:
+            stats_embed.add_field(
+                name="🔍 Flagged",
+                value=f"**{flagged_count}** ({flagged_count * 100 // total}%)",
+                inline=True
+            )
+        stats_embed.set_footer(text="Stats pulled from the verification database")
+        await interaction.response.send_message(embed=stats_embed)
+
     async def cog_app_command_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.MissingPermissions):
             message = "You need Manage Roles permission."
